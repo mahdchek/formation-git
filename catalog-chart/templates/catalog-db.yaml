@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: catalog-db
+  template:
+    metadata:
+      labels:
+        type: bdd
+        application: catalog-db
+    spec:
+      containers:
+        - name: catalog-db
+          image: postgres
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ecom-secrets
+                  key: catalog-db-password
+          ports:
+            - containerPort: 5432

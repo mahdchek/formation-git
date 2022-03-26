@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-app
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 30%
+      maxUnavailable: 0%
+  selector:
+    matchLabels:
+      application: catalog
+  template:
+    metadata:
+      labels:
+        type: back-end
+        application: catalog
+    spec:
+      volumes:
+        - name: configuration-volume
+          configMap:
+            name: catalog-cm
+      containers:
+        - name: catalog-pod
+          image: mchekini/catalog:7.0
+          volumeMounts:
+            - mountPath: /opt/config
+              name: configuration-volume
+          livenessProbe:
+            httpGet:
+              path: /api/v1/liveness
+              port: 8080
+            successThreshold: 1
+            failureThreshold: 20
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            timeoutSeconds: 60
+          readinessProbe:
+            httpGet:
+              port: 8080
+              path: /api/v1/readiness
+            successThreshold: 1
+            failureThreshold: 20
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            timeoutSeconds: 60
+          env:
+            - name: pod-name
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: catalog-db-password
+              valueFrom:
+                secretKeyRef:
+                  name: ecom-secrets
+                  key: catalog-db-password
+          ports:
+            - containerPort: 8080
